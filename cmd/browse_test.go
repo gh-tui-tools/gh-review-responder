@@ -539,3 +539,21 @@ func TestPreviewWithHighlight_ContextShowsTail(t *testing.T) {
 		t.Errorf("preview context should not show lines from start of long hunk, got:\n%s", preview)
 	}
 }
+
+func TestBrowseCountsOnlyCommentRows(t *testing.T) {
+	items := buildCommentTree([]*github.ReviewComment{
+		{ID: 1, Path: "a.go", Line: 10},
+		{ID: 2, Path: "b.go", Line: 20},
+	})
+
+	count := 0
+	for _, item := range items {
+		if browseCountable(item) {
+			count++
+		}
+	}
+
+	if count != 2 {
+		t.Errorf("browseCountable matched %d of %d rows, want 2", count, len(items))
+	}
+}

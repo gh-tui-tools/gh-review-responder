@@ -391,6 +391,7 @@ func runBrowse(cmd *cobra.Command, args []string) error {
 			FilterDefault:  true, // Hide resolved comments by default
 			IsItemResolved: isItemResolved,
 			RefreshItems:   refreshItems,
+			CountableItem:  browseCountable,
 
 			// r/u key: resolve/unresolve
 			ResolveAction: resolveAction,
@@ -531,6 +532,12 @@ type BrowseItem struct {
 	Comment            *github.ReviewComment
 	IsPreview          bool
 	SelectedCommentIdx int // 0 = main comment, 1+ = thread reply index
+}
+
+// browseCountable reports whether item is a review comment rather than a row
+// that exists only for layout, such as a file header or a preview row.
+func browseCountable(item BrowseItem) bool {
+	return item.Type == "comment"
 }
 
 // buildCommentTree converts a flat list of comments into a tree-like structure

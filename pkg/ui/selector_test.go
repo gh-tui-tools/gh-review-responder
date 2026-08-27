@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -1095,16 +1094,7 @@ func (r mockRenderer) WithSelectedComment(item string, idx int) string    { retu
 
 // newTestModel creates a SelectionModel suitable for testing
 func newTestModel(items []string, opts SelectorOptions[string]) SelectionModel[string] {
-	listItems := make([]list.Item, len(items))
-	for i, item := range items {
-		listItems[i] = listItem[string]{value: item, item: opts.Renderer}
-	}
-
-	delegate := itemDelegate[string]{renderer: opts.Renderer}
-	l := list.New(listItems, delegate, 80, 24)
-	l.SetShowStatusBar(true)
-	l.SetFilteringEnabled(true)
-	l.SetShowHelp(false)
+	l := newSelectorList(items, opts, 80, 24)
 
 	return SelectionModel[string]{
 		list:         l,
@@ -1392,5 +1382,80 @@ func TestRefreshingStateBlocksMultipleRefreshes(t *testing.T) {
 	// Only one call should have been made
 	if callCount != 1 {
 		t.Errorf("Expected exactly 1 RefreshItems call, got %d", callCount)
+	}
+}
+
+func TestCountableItemStatusCount(t *testing.T) {
+	// Mirrors the browse tree shape: one non-countable header row, then a
+	// countable row plus a non-countable preview row per entry.
+	allItems := []string{"file:x", "c:1", "p:1", "c:2", "p:2"}
+
+	opts := SelectorOptions[string]{
+		Items:    allItems,
+		Renderer: mockRenderer{previewContent: "preview"},
+		FilterFunc: func(item string, hide bool) bool {
+			if !hide {
+				return true
+			}
+			return !strings.HasSuffix(item, ":2")
+		},
+		FilterDefault: true,
+		CountableItem: func(item string) bool {
+			return strings.HasPrefix(item, "c:")
+		},
+	}
+
+	m := newTestModel(allItems, opts)
+	m.updateVisibleItems()
+
+	if got := len(m.list.Items()); got != 3 {
+		t.Fatalf("list holds %d rows, want 3 (header + c:1 + p:1)", got)
+	}
+
+	got := m.countSummary()
+	want := "1 item · 1 filtered"
+	if got != want {
+		t.Errorf("countSummary() = %q, want %q", got, want)
+	}
+}
+
+func TestCountableItemStatusCountNilCountsEveryRow(t *testing.T) {
+	items := []string{"a", "b", "c"}
+	m := newTestModel(items, SelectorOptions[string]{
+		Items:    items,
+		Renderer: mockRenderer{previewContent: "preview"},
+	})
+
+	if got, want := m.countSummary(), "3 items"; got != want {
+		t.Errorf("countSummary() = %q, want %q", got, want)
+	}
+}
+
+func TestListViewShowsCountableTallyNotRowCount(t *testing.T) {
+	allItems := []string{"file:x", "c:1", "p:1", "c:2", "p:2"}
+
+	m := newTestModel(allItems, SelectorOptions[string]{
+		Items:    allItems,
+		Renderer: mockRenderer{previewContent: "preview"},
+		FilterFunc: func(item string, hide bool) bool {
+			if !hide {
+				return true
+			}
+			return !strings.HasSuffix(item, ":2")
+		},
+		FilterDefault: true,
+		CountableItem: func(item string) bool {
+			return strings.HasPrefix(item, "c:")
+		},
+	})
+	m.updateVisibleItems()
+
+	view := m.View()
+
+	if want := "1 item · 1 filtered"; !strings.Contains(view, want) {
+		t.Errorf("View() does not contain %q\n%s", want, view)
+	}
+	if strings.Contains(view, "3 items") {
+		t.Errorf("View() still reports the raw row count %q\n%s", "3 items", view)
 	}
 }
