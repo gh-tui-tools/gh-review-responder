@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/gh-tui-tools/gh-review-conductor/pkg/applier"
 	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
@@ -610,5 +611,73 @@ func TestBrowseCountsOnlyCommentRows(t *testing.T) {
 
 	if count != 2 {
 		t.Errorf("browseCountable matched %d of %d rows, want 2", count, len(items))
+	}
+}
+
+// osc8Re matches an OSC8 hyperlink sequence, which the CSI-only regex used
+// elsewhere in this file does not cover.
+var osc8Re = regexp.MustCompile("\x1b\\]8;;[^\x1b]*\x1b\\\\")
+
+// stripTerminalEscapes removes both OSC8 hyperlinks and CSI color codes.
+func stripTerminalEscapes(s string) string {
+	s = osc8Re.ReplaceAllString(s, "")
+	return regexp.MustCompile("\x1b\\[[0-9;]*m").ReplaceAllString(s, "")
+}
+
+func previewItem(body, htmlURL string) BrowseItem {
+	return BrowseItem{
+		Type:      "comment_preview",
+		Path:      "src/main.go",
+		IsPreview: true,
+		Comment: &github.ReviewComment{
+			ID:      456,
+			Author:  "reviewer",
+			Body:    body,
+			HTMLURL: htmlURL,
+		},
+	}
+}
+
+func newPreviewRenderer() *browseItemRenderer {
+	return &browseItemRenderer{
+		repo:           "owner/repo",
+		prNumber:       123,
+		collapsedFiles: make(map[string]bool),
+	}
+}
+
+func TestBrowseItemRenderer_PreviewExcerptLinksToComment(t *testing.T) {
+	const url = "https://github.com/owner/repo/pull/123#discussion_r456"
+
+	title := newPreviewRenderer().Title(previewItem("Consider using TRY() here", url))
+
+	if !strings.Contains(title, "\x1b]8;;"+url+"\x1b\\") {
+		t.Errorf("excerpt should open an OSC8 link to %s, got %q", url, title)
+	}
+	if !strings.Contains(title, "\x1b]8;;\x1b\\") {
+		t.Errorf("excerpt should close its OSC8 link, got %q", title)
+	}
+	if !strings.HasPrefix(title, "      ") {
+		t.Errorf("the indent should stay outside the link, got %q", title)
+	}
+}
+
+func TestBrowseItemRenderer_PreviewExcerptWithoutURLIsNotLinked(t *testing.T) {
+	title := newPreviewRenderer().Title(previewItem("Consider using TRY() here", ""))
+
+	if strings.Contains(title, "\x1b]8;;") {
+		t.Errorf("excerpt with no URL should carry no OSC8 link, got %q", title)
+	}
+}
+
+func TestBrowseItemRenderer_PreviewExcerptTruncatesOnRuneBoundary(t *testing.T) {
+	// A body of multi-byte runes is far longer in bytes than in columns, so a
+	// byte-based cap slices a rune in half and renders as mojibake.
+	body := strings.Repeat("\u65e5", 100)
+
+	plain := stripTerminalEscapes(newPreviewRenderer().Title(previewItem(body, "")))
+
+	if !utf8.ValidString(plain) {
+		t.Errorf("excerpt truncation split a rune: %q", plain)
 	}
 }
