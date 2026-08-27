@@ -681,3 +681,149 @@ func TestBrowseItemRenderer_PreviewExcerptTruncatesOnRuneBoundary(t *testing.T) 
 		t.Errorf("excerpt truncation split a rune: %q", plain)
 	}
 }
+
+// Fixtures mirror real CodeRabbit review comment bodies.
+func crBody(lines ...string) string { return strings.Join(lines, "\n") }
+
+func TestCoderabbitSummary(t *testing.T) {
+	tests := []struct {
+		name         string
+		body         string
+		wantSeverity string
+		wantTitle    string
+		wantOK       bool
+	}{
+		{
+			name: "title on the third line",
+			body: crBody(
+				"_\U0001FA7A Stability & Availability_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+				"",
+				"**Grant Accessibility to the Python executable.**",
+				"",
+				"The macOS branch calls setFocus after every tree update."),
+			wantSeverity: "\U0001F7E0 Major",
+			wantTitle:    "Grant Accessibility to the Python executable.",
+			wantOK:       true,
+		},
+		{
+			name: "title follows a collapsed analysis block",
+			body: crBody(
+				"_\U0001F3AF Functional Correctness_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+				"",
+				"<details>",
+				"<summary>\U0001F9E9 Analysis chain</summary>",
+				"",
+				"```shell",
+				"rg -n -P -C4 '**/*.h Libraries/LibWeb/'",
+				"```",
+				"",
+				"</details>",
+				"",
+				"**Track traversal depth instead of limiting child count.**"),
+			wantSeverity: "\U0001F7E0 Major",
+			wantTitle:    "Track traversal depth instead of limiting child count.",
+			wantOK:       true,
+		},
+		{
+			name: "title carries trailing prose on the same line",
+			body: crBody(
+				"_\U0001FA7A Stability & Availability_ | _\U0001F7E1 Minor_ | _\u26A1 Quick win_",
+				"",
+				"**Deregistered interfaces leak their QObjects.** Each interface allocates one."),
+			wantSeverity: "\U0001F7E1 Minor",
+			wantTitle:    "Deregistered interfaces leak their QObjects.",
+			wantOK:       true,
+		},
+		{
+			name: "label-style bold headings are skipped for the real title",
+			body: crBody(
+				"_\U0001F512 Security & Privacy_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+				"",
+				"**Sensitive Data Exposure (CWE-200):** Exposure of Sensitive Information",
+				"",
+				"**Reachability:** External",
+				"",
+				"**Mask password text in the accessibility tree**",
+				"",
+				"The tree already skips type=password for node_data.value."),
+			wantSeverity: "\U0001F7E0 Major",
+			wantTitle:    "Mask password text in the accessibility tree",
+			wantOK:       true,
+		},
+		{
+			name: "falls back to the label when every bold span is one",
+			body: crBody(
+				"_\U0001F512 Security & Privacy_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+				"",
+				"**Other (CWE-377):** Insecure Temporary File",
+				"",
+				"**Reachability:** External"),
+			wantSeverity: "\U0001F7E0 Major",
+			wantTitle:    "Other (CWE-377):",
+			wantOK:       true,
+		},
+		{
+			name:   "coderabbit reply carries no severity line",
+			body:   "`@sideshowbarker`, acknowledged " + "\u2014" + " this is cosmetic.",
+			wantOK: false,
+		},
+		{
+			name:   "ordinary human comment",
+			body:   crBody("This shouldn't be necessary since there's a global find_package now.", "", "Please drop it."),
+			wantOK: false,
+		},
+		{
+			name: "severity line with no bold title anywhere",
+			body: crBody(
+				"_\U0001F3AF Functional Correctness_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+				"",
+				"<details>",
+				"</details>"),
+			wantOK: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			severity, title, ok := coderabbitSummary(tt.body)
+			if ok != tt.wantOK {
+				t.Fatalf("ok = %v, want %v", ok, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if severity != tt.wantSeverity {
+				t.Errorf("severity = %q, want %q", severity, tt.wantSeverity)
+			}
+			if title != tt.wantTitle {
+				t.Errorf("title = %q, want %q", title, tt.wantTitle)
+			}
+		})
+	}
+}
+
+func TestCoderabbitExcerptDropsEmojiWithoutColor(t *testing.T) {
+	body := crBody(
+		"_\U0001FA7A Stability & Availability_ | _\U0001F7E0 Major_ | _\u26A1 Quick win_",
+		"",
+		"**Grant Accessibility to the Python executable.**")
+
+	restore := ui.ColorsEnabled()
+	defer ui.SetColorEnabled(restore)
+
+	ui.SetColorEnabled(true)
+	if got, want := coderabbitExcerpt(body), "\U0001F7E0 Major: Grant Accessibility to the Python executable."; got != want {
+		t.Errorf("with color: got %q, want %q", got, want)
+	}
+
+	ui.SetColorEnabled(false)
+	if got, want := coderabbitExcerpt(body), "Major: Grant Accessibility to the Python executable."; got != want {
+		t.Errorf("without color: got %q, want %q", got, want)
+	}
+}
+
+func TestCoderabbitExcerptIgnoresOtherComments(t *testing.T) {
+	if got := coderabbitExcerpt("Just a normal review comment."); got != "" {
+		t.Errorf("non-CodeRabbit body should yield no excerpt, got %q", got)
+	}
+}
