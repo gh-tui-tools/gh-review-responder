@@ -540,6 +540,61 @@ func TestPreviewWithHighlight_ContextShowsTail(t *testing.T) {
 	}
 }
 
+func TestBuildCommentTreeMarksFileHeaderResolvedState(t *testing.T) {
+	comments := []*github.ReviewComment{
+		{ID: 1, Path: "open.go", Line: 10},
+		{ID: 2, Path: "done.go", Line: 20, SubjectType: "resolved"},
+		{ID: 3, Path: "mixed.go", Line: 30, SubjectType: "resolved"},
+		{ID: 4, Path: "mixed.go", Line: 40},
+	}
+
+	headers := make(map[string]BrowseItem)
+	for _, item := range buildCommentTree(comments) {
+		if item.Type == "file" {
+			headers[item.Path] = item
+		}
+	}
+
+	for path, want := range map[string]bool{"open.go": true, "done.go": false, "mixed.go": true} {
+		if got := headers[path].HasUnresolved; got != want {
+			t.Errorf("header %s HasUnresolved = %v, want %v", path, got, want)
+		}
+	}
+}
+
+func TestBrowseFilterHidesFileHeadersWithNoUnresolvedComments(t *testing.T) {
+	collapsed := map[string]bool{}
+
+	openHeader := BrowseItem{Type: "file", Path: "open.go", HasUnresolved: true}
+	doneHeader := BrowseItem{Type: "file", Path: "done.go"}
+
+	if !browseFilter(openHeader, true, collapsed) {
+		t.Error("header with unresolved comments should stay visible when hiding resolved")
+	}
+	if browseFilter(doneHeader, true, collapsed) {
+		t.Error("header with only resolved comments should be hidden when hiding resolved")
+	}
+	if !browseFilter(doneHeader, false, collapsed) {
+		t.Error("header should stay visible when resolved comments are shown")
+	}
+}
+
+func TestBrowseFilterHidesCollapsedAndResolvedComments(t *testing.T) {
+	resolved := &github.ReviewComment{ID: 1, Path: "a.go", SubjectType: "resolved"}
+	open := &github.ReviewComment{ID: 2, Path: "a.go"}
+	collapsed := map[string]bool{"b.go": true}
+
+	if browseFilter(BrowseItem{Type: "comment", Path: "a.go", Comment: resolved}, true, collapsed) {
+		t.Error("resolved comment should be hidden when hiding resolved")
+	}
+	if !browseFilter(BrowseItem{Type: "comment", Path: "a.go", Comment: open}, true, collapsed) {
+		t.Error("unresolved comment should stay visible when hiding resolved")
+	}
+	if browseFilter(BrowseItem{Type: "comment_preview", Path: "b.go", Comment: open}, false, collapsed) {
+		t.Error("preview row in a collapsed file should be hidden")
+	}
+}
+
 func TestBrowseCountsOnlyCommentRows(t *testing.T) {
 	items := buildCommentTree([]*github.ReviewComment{
 		{ID: 1, Path: "a.go", Line: 10},

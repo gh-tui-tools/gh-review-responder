@@ -114,20 +114,7 @@ func runBrowse(cmd *cobra.Command, args []string) error {
 
 		// Filter function (hide resolved and collapsed)
 		filterFunc := func(item BrowseItem, hideResolved bool) bool {
-			// 1. Check collapse state (Always applies)
-			if (item.Type == "comment" || item.Type == "comment_preview") && collapsedFiles[item.Path] {
-				return false
-			}
-
-			// 2. Check resolved state (Only if hideResolved is true)
-			if hideResolved {
-				if item.Type == "file" {
-					return true // Always show headers
-				}
-				return !item.Comment.IsResolved()
-			}
-
-			return true
+			return browseFilter(item, hideResolved, collapsedFiles)
 		}
 
 		// Handle selection (Enter key)
@@ -531,7 +518,31 @@ type BrowseItem struct {
 	Path               string
 	Comment            *github.ReviewComment
 	IsPreview          bool
-	SelectedCommentIdx int // 0 = main comment, 1+ = thread reply index
+	SelectedCommentIdx int  // 0 = main comment, 1+ = thread reply index
+	HasUnresolved      bool // for "file" headers: whether the file has any unresolved comment
+}
+
+// browseFilter reports whether item should be visible, given whether resolved
+// comments are hidden and which files are collapsed.
+func browseFilter(item BrowseItem, hideResolved bool, collapsedFiles map[string]bool) bool {
+	if item.Type == "file" {
+		// A header for a file with nothing left to show would stand alone
+		// above an empty section.
+		if hideResolved {
+			return item.HasUnresolved
+		}
+		return true
+	}
+
+	if collapsedFiles[item.Path] {
+		return false
+	}
+
+	if hideResolved {
+		return !item.Comment.IsResolved()
+	}
+
+	return true
 }
 
 // browseCountable reports whether item is a review comment rather than a row
@@ -577,14 +588,24 @@ func buildCommentTree(comments []*github.ReviewComment) []BrowseItem {
 	var items []BrowseItem
 
 	for _, path := range filePaths {
+		fileComments := files[path]
+
+		hasUnresolved := false
+		for _, c := range fileComments {
+			if !c.IsResolved() {
+				hasUnresolved = true
+				break
+			}
+		}
+
 		// Add File Header
 		items = append(items, BrowseItem{
-			Type: "file",
-			Path: path,
+			Type:          "file",
+			Path:          path,
+			HasUnresolved: hasUnresolved,
 		})
 
 		// Sort comments in this file by line
-		fileComments := files[path]
 		for i := 0; i < len(fileComments); i++ {
 			for j := i + 1; j < len(fileComments); j++ {
 				if fileComments[i].Line > fileComments[j].Line {
