@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestSanitizeEditorContent(t *testing.T) {
@@ -1457,5 +1459,64 @@ func TestListViewShowsCountableTallyNotRowCount(t *testing.T) {
 	}
 	if strings.Contains(view, "3 items") {
 		t.Errorf("View() still reports the raw row count %q\n%s", "3 items", view)
+	}
+}
+
+// plainRenderer renders no description, so a rendered row is just its title.
+type plainRenderer struct{ mockRenderer }
+
+func (r plainRenderer) Description(item string) string { return "" }
+
+func TestItemDelegateTruncatesOnVisibleWidthNotBytes(t *testing.T) {
+	// A colorized row wider than the list must truncate on visible columns
+	// rather than bytes, and must keep its reset so color does not bleed
+	// into the rest of the line.
+	long := Colorize(ColorGray, strings.Repeat("a", 100))
+	items := []string{"first", long}
+
+	renderer := plainRenderer{}
+	opts := SelectorOptions[string]{Items: items, Renderer: renderer}
+	m := newTestModel(items, opts)
+
+	var buf bytes.Buffer
+	itemDelegate[string]{renderer: renderer}.Render(
+		&buf, m.list, 1, listItem[string]{value: long, item: renderer})
+	out := buf.String()
+
+	// The list is 80 wide; the delegate allows 4 columns and prepends a
+	// two-space gutter, so a truncated row occupies 76 + 2 columns.
+	if got, want := ansi.StringWidth(out), 78; got != want {
+		t.Errorf("rendered visible width = %d, want %d\n%q", got, want, out)
+	}
+	if !strings.Contains(out, ColorReset) {
+		t.Errorf("rendered row lost its color reset: %q", out)
+	}
+}
+
+func TestItemDelegateKeepsHyperlinkIntactWhenTruncating(t *testing.T) {
+	// A hyperlinked row carries roughly 100 bytes of invisible OSC8 payload,
+	// so a byte-based cut lands inside the URL and leaves the terminal in an
+	// unterminated escape sequence.
+	url := "https://github.com/owner/repo/pull/10661#discussion_r3865507885"
+	linked := CreateHyperlink(url, Colorize(ColorGray, strings.Repeat("a", 90)))
+	items := []string{"first", linked}
+
+	renderer := plainRenderer{}
+	opts := SelectorOptions[string]{Items: items, Renderer: renderer}
+	m := newTestModel(items, opts)
+
+	var buf bytes.Buffer
+	itemDelegate[string]{renderer: renderer}.Render(
+		&buf, m.list, 1, listItem[string]{value: linked, item: renderer})
+	out := buf.String()
+
+	if !strings.Contains(out, "\x1b]8;;"+url+"\x1b\\") {
+		t.Errorf("truncation broke the OSC8 open sequence: %q", out)
+	}
+	if !strings.HasSuffix(out, "\x1b]8;;\x1b\\") {
+		t.Errorf("truncation dropped the OSC8 close sequence: %q", out)
+	}
+	if got, want := ansi.StringWidth(out), 78; got != want {
+		t.Errorf("rendered visible width = %d, want %d", got, want)
 	}
 }
