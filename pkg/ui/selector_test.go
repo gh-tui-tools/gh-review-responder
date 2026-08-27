@@ -1563,3 +1563,36 @@ func TestRefreshKeepsHideResolvedFilterApplied(t *testing.T) {
 	}
 }
 
+
+func TestRefreshStatusReportsCountableTally(t *testing.T) {
+	hideResolved := func(item string, active bool) bool {
+		if !active {
+			return true
+		}
+		return !strings.HasPrefix(item, "resolved:")
+	}
+
+	items := []string{"header:a", "open:1", "resolved:1"}
+	m := newTestModel(items, SelectorOptions[string]{
+		Items:         items,
+		Renderer:      plainRenderer{},
+		FilterFunc:    hideResolved,
+		FilterDefault: true,
+		CountableItem: func(item string) bool { return !strings.HasPrefix(item, "header:") },
+		RefreshItems:  func() ([]string, error) { return nil, nil },
+	})
+	m.updateVisibleItems()
+
+	// Five rows, of which two are countable and visible once resolved rows
+	// are hidden.
+	fresh := []string{"header:a", "open:1", "open:2", "resolved:1", "resolved:2"}
+	updated, _ := m.Update(refreshFinishedMsg{items: fresh})
+	view := updated.(SelectionModel[string]).View()
+
+	if !strings.Contains(view, "Refreshed: 2 items") {
+		t.Errorf("status should report the countable visible tally\n%s", view)
+	}
+	if strings.Contains(view, "Refreshed: 5 items") {
+		t.Errorf("status still reports the raw row count\n%s", view)
+	}
+}
