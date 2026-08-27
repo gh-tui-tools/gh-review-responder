@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // reactionEmojis defines the available emoji reactions for GitHub comments
@@ -1233,15 +1234,13 @@ func (d itemDelegate[T]) Render(w io.Writer, m list.Model, index int, item list.
 	title := i.Title()
 	desc := i.Description()
 
-	// Truncate if needed
+	// Truncate on visible columns. ANSI escapes occupy bytes but no
+	// columns, so a byte-based cut both undercounts the room available and
+	// can slice through an escape sequence.
 	maxWidth := m.Width() - 4
 	if maxWidth > 0 {
-		if len(title) > maxWidth {
-			title = title[:maxWidth-3] + "..."
-		}
-		if len(desc) > maxWidth {
-			desc = desc[:maxWidth-3] + "..."
-		}
+		title = ansi.Truncate(title, maxWidth, "...")
+		desc = ansi.Truncate(desc, maxWidth, "...")
 	}
 
 	var line string
