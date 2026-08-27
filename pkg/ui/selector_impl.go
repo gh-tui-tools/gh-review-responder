@@ -163,7 +163,7 @@ func (m SelectionModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			return m, tea.Batch(cmd, m.list.NewStatusMessage(Colorize(ColorGreen, fmt.Sprintf("Refreshed: %d items", len(items)))))
+			return m, tea.Batch(cmd, m.list.NewStatusMessage(Colorize(ColorGreen, fmt.Sprintf("Refreshed: %s", m.countSummary()))))
 		}
 		return m, nil
 
