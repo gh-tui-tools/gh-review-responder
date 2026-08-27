@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/gh-tui-tools/gh-review-conductor/pkg/applier"
 	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
 	"github.com/gh-tui-tools/gh-review-conductor/pkg/ui"
@@ -672,13 +673,18 @@ func (r *browseItemRenderer) Title(item BrowseItem) string {
 		preview := "..."
 		if len(lines) > 0 {
 			preview = lines[0]
-			if len(preview) > 80 {
-				preview = preview[:77] + "..."
+			// Truncate on visible columns so that a multi-byte rune is
+			// never sliced in half.
+			if ansi.StringWidth(preview) > 80 {
+				preview = ansi.Truncate(preview, 80, "...")
 			} else if len(lines) > 1 {
 				preview += "..."
 			}
 		}
-		return "      " + ui.Colorize(ui.ColorGray, preview)
+		// The indent stays outside the link so that only the excerpt itself
+		// is clickable.
+		excerpt := ui.CreateHyperlink(item.Comment.HTMLURL, ui.Colorize(ui.ColorGray, preview))
+		return "      " + excerpt
 	}
 
 	// Comment Metadata
