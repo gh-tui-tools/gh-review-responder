@@ -148,11 +148,7 @@ func (m SelectionModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if items, ok := msg.items.([]T); ok {
 			m.items = items
-			listItems := make([]list.Item, len(items))
-			for i, item := range items {
-				listItems[i] = listItem[T]{value: item, item: m.opts.Renderer}
-			}
-			cmd := m.list.SetItems(listItems)
+			cmd := m.updateVisibleItems()
 
 			// If in detail view, refresh the viewport content
 			if m.showDetail {
@@ -471,11 +467,11 @@ func (m SelectionModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Toggle filter (h = hide/show resolved, tab kept for compatibility)
 			if m.opts.FilterFunc != nil {
 				m.filterActive = !m.filterActive
-				m.updateVisibleItems()
+				cmd := m.updateVisibleItems()
 				if m.filterActive {
-					return m, m.list.NewStatusMessage("Hiding resolved")
+					return m, tea.Batch(cmd, m.list.NewStatusMessage("Hiding resolved"))
 				}
-				return m, m.list.NewStatusMessage("Showing all")
+				return m, tea.Batch(cmd, m.list.NewStatusMessage("Showing all"))
 			}
 			return m, nil
 		case "i":
@@ -730,15 +726,16 @@ func (m *SelectionModel[T]) launchAgent(prompt string) tea.Cmd {
 	})
 }
 
-// updateVisibleItems applies filter and updates the list
-func (m *SelectionModel[T]) updateVisibleItems() {
+// updateVisibleItems applies filter and updates the list. It returns the
+// command SetItems produces, which re-runs any active text filter.
+func (m *SelectionModel[T]) updateVisibleItems() tea.Cmd {
 	listItems := make([]list.Item, 0, len(m.items))
 	for _, item := range m.items {
 		if m.opts.FilterFunc == nil || m.opts.FilterFunc(item, m.filterActive) {
 			listItems = append(listItems, listItem[T]{value: item, item: m.opts.Renderer})
 		}
 	}
-	m.list.SetItems(listItems)
+	return m.list.SetItems(listItems)
 }
 
 // countSummary renders the item tally shown above the list.

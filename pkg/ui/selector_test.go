@@ -1520,3 +1520,46 @@ func TestItemDelegateKeepsHyperlinkIntactWhenTruncating(t *testing.T) {
 		t.Errorf("rendered visible width = %d, want %d", got, want)
 	}
 }
+
+// visibleValues returns the values the list is currently showing.
+func visibleValues(m SelectionModel[string]) []string {
+	var out []string
+	for _, listed := range m.list.Items() {
+		out = append(out, listed.(listItem[string]).value)
+	}
+	return out
+}
+
+func TestRefreshKeepsHideResolvedFilterApplied(t *testing.T) {
+	hideResolved := func(item string, active bool) bool {
+		if !active {
+			return true
+		}
+		return !strings.HasPrefix(item, "resolved:")
+	}
+
+	items := []string{"open:1", "resolved:1"}
+	m := newTestModel(items, SelectorOptions[string]{
+		Items:         items,
+		Renderer:      mockRenderer{previewContent: "preview"},
+		FilterFunc:    hideResolved,
+		FilterDefault: true,
+		RefreshItems:  func() ([]string, error) { return nil, nil },
+	})
+	m.updateVisibleItems()
+
+	fresh := []string{"open:1", "open:2", "resolved:1", "resolved:2"}
+	updated, _ := m.Update(refreshFinishedMsg{items: fresh})
+	result := updated.(SelectionModel[string])
+
+	if got, want := strings.Join(visibleValues(result), ","), "open:1,open:2"; got != want {
+		t.Errorf("visible after refresh = %q, want %q", got, want)
+	}
+	if !result.filterActive {
+		t.Error("refresh should leave the hide-resolved filter active")
+	}
+	if got, want := len(result.items), 4; got != want {
+		t.Errorf("backing items = %d, want %d (refresh must keep every item)", got, want)
+	}
+}
+
