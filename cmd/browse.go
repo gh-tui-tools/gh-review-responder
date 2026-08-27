@@ -20,6 +20,19 @@ import (
 var (
 	markdownImageRe = regexp.MustCompile(`!\[.*?\]\(.*?\)`)
 	markdownLinkRe  = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+
+	// coderabbitSeverityRe matches the header line CodeRabbit puts at the top
+	// of a review comment: three underscore-delimited segments separated by
+	// pipes, the second of which carries the severity.
+	coderabbitSeverityRe = regexp.MustCompile(`^_[^_]+_\s*\|\s*_([^_]+)_\s*\|`)
+
+	// coderabbitTitleRe matches a bold span at the start of a line. Anchoring
+	// to the line start keeps it clear of the bold markers that turn up inside
+	// the shell snippets CodeRabbit embeds in its collapsed analysis blocks.
+	coderabbitTitleRe = regexp.MustCompile(`^\s*\*\*(.+?)\*\*`)
+
+	// severityLeadInRe matches the emoji and spacing ahead of a severity word.
+	severityLeadInRe = regexp.MustCompile(`^[^\p{L}\p{N}]+`)
 )
 
 var browseDebug bool
@@ -523,6 +536,60 @@ type BrowseItem struct {
 	HasUnresolved      bool // for "file" headers: whether the file has any unresolved comment
 }
 
+// coderabbitSummary extracts the severity and the title from a CodeRabbit
+// review comment body, reporting false for a body that is not one.
+func coderabbitSummary(body string) (severity, title string, ok bool) {
+	lines := strings.Split(body, "\n")
+	header := coderabbitSeverityRe.FindStringSubmatch(lines[0])
+	if header == nil {
+		return "", "", false
+	}
+
+	// CodeRabbit security findings open with taxonomy labels such as
+	// "Sensitive Data Exposure (CWE-200):" and "Reachability:" ahead of the
+	// sentence that names the finding. Prefer that sentence, and settle for
+	// the first label only when nothing else follows it.
+	var label string
+	for _, line := range lines[1:] {
+		match := coderabbitTitleRe.FindStringSubmatch(line)
+		if match == nil {
+			continue
+		}
+		candidate := strings.TrimSpace(match[1])
+		if !strings.HasSuffix(candidate, ":") {
+			return strings.TrimSpace(header[1]), candidate, true
+		}
+		if label == "" {
+			label = candidate
+		}
+	}
+	if label != "" {
+		return strings.TrimSpace(header[1]), label, true
+	}
+	return "", "", false
+}
+
+// coderabbitExcerpt renders the tree summary for a CodeRabbit review comment,
+// returning an empty string for a body that is not one.
+func coderabbitExcerpt(body string) string {
+	severity, title, ok := coderabbitSummary(body)
+	if !ok {
+		return ""
+	}
+	return ui.EmojiText(severity, severityLeadInRe.ReplaceAllString(severity, "")) + ": " + title
+}
+
+// firstLineExcerpt returns the first line of a comment body, marked with an
+// ellipsis when the body carries more lines.
+func firstLineExcerpt(body string) string {
+	lines := strings.Split(ui.StripSuggestionBlock(body), "\n")
+	preview := lines[0]
+	if len(lines) > 1 {
+		preview += "..."
+	}
+	return preview
+}
+
 // browseFilter reports whether item should be visible, given whether resolved
 // comments are hidden and which files are collapsed.
 func browseFilter(item BrowseItem, hideResolved bool, collapsedFiles map[string]bool) bool {
@@ -668,18 +735,14 @@ func (r *browseItemRenderer) Title(item BrowseItem) string {
 		// Show truncated body for preview item in gray
 		// Note: This works because IsSkippable returns false, so lipgloss
 		// won't re-style this text and interfere with the ANSI codes
-		body := ui.StripSuggestionBlock(item.Comment.Body)
-		lines := strings.Split(body, "\n")
-		preview := "..."
-		if len(lines) > 0 {
-			preview = lines[0]
-			// Truncate on visible columns so that a multi-byte rune is
-			// never sliced in half.
-			if ansi.StringWidth(preview) > 80 {
-				preview = ansi.Truncate(preview, 80, "...")
-			} else if len(lines) > 1 {
-				preview += "..."
-			}
+		preview := coderabbitExcerpt(item.Comment.Body)
+		if preview == "" {
+			preview = firstLineExcerpt(item.Comment.Body)
+		}
+		// Truncate on visible columns so that a multi-byte rune is never
+		// sliced in half.
+		if ansi.StringWidth(preview) > 80 {
+			preview = ansi.Truncate(preview, 80, "...")
 		}
 		// The indent stays outside the link so that only the excerpt itself
 		// is clickable.
