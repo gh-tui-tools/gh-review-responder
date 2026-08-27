@@ -84,6 +84,12 @@ type SelectorOptions[T any] struct {
 	IsItemResolved func(T) bool        // For dynamic key display (r vs u)
 	RefreshItems   func() ([]T, error) // Called when 'i' is pressed
 
+	// CountableItem reports whether an item counts toward the tally shown
+	// above the list. Rows that exist only for layout, such as group headers
+	// and preview rows, return false so the tally reflects real entries.
+	// When nil, every visible row counts.
+	CountableItem func(T) bool
+
 	// Action: r/u (resolve toggle)
 	ResolveAction CustomAction[T]
 	ResolveKey    string // e.g., "r resolve"
@@ -171,10 +177,10 @@ type SelectionModel[T any] struct {
 	reactionItem      listItem[T] // the item being reacted to
 
 	// Apply suggestion preview state
-	applyPreviewMode       bool        // true when showing apply preview
-	applyPreviewDiff       string      // the diff to show
-	applyPreviewItem       listItem[T] // the item being applied
-	applyPreviewWithResolve bool       // true if should also resolve after applying
+	applyPreviewMode        bool        // true when showing apply preview
+	applyPreviewDiff        string      // the diff to show
+	applyPreviewItem        listItem[T] // the item being applied
+	applyPreviewWithResolve bool        // true if should also resolve after applying
 }
 
 // listItem wraps a generic item for the list model

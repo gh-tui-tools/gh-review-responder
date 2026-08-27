@@ -58,20 +58,7 @@ func SelectFromListWithAction[T any](items []T, renderer ItemRenderer[T], custom
 // Select creates an interactive selector with the given options.
 // This is the primary API for creating selectors.
 func Select[T any](opts SelectorOptions[T]) (T, error) {
-	// Convert items to list items
-	listItems := make([]list.Item, len(opts.Items))
-	for i, item := range opts.Items {
-		listItems[i] = listItem[T]{value: item, item: opts.Renderer}
-	}
-
-	delegate := itemDelegate[T]{renderer: opts.Renderer}
-	l := list.New(listItems, delegate, 0, 0)
-	l.SetShowStatusBar(true)
-	l.SetFilteringEnabled(true)
-	l.SetShowHelp(false)
-	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
-	l.Styles.StatusBar = lipgloss.NewStyle().Padding(0, 1)
-	l.KeyMap.Quit.SetKeys()
+	l := newSelectorList(opts.Items, opts, 0, 0)
 
 	m := SelectionModel[T]{
 		list:         l,
@@ -99,6 +86,26 @@ func Select[T any](opts SelectorOptions[T]) (T, error) {
 		return zero, ErrNoSelection
 	}
 	return final.result[0], nil
+}
+
+// newSelectorList builds the bubbles list model backing a selector.
+func newSelectorList[T any](items []T, opts SelectorOptions[T], width, height int) list.Model {
+	listItems := make([]list.Item, len(items))
+	for i, item := range items {
+		listItems[i] = listItem[T]{value: item, item: opts.Renderer}
+	}
+
+	l := list.New(listItems, itemDelegate[T]{renderer: opts.Renderer}, width, height)
+	// The tally above the list is rendered from countSummary, which counts
+	// entries. The built-in status bar counts rendered rows, so a tree that
+	// emits group headers and preview rows would overstate the total.
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(true)
+	l.SetShowHelp(false)
+	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
+	l.Styles.StatusBar = lipgloss.NewStyle().Padding(0, 1)
+	l.KeyMap.Quit.SetKeys()
+	return l
 }
 
 // Init initializes the model
@@ -733,6 +740,39 @@ func (m *SelectionModel[T]) updateVisibleItems() {
 	m.list.SetItems(listItems)
 }
 
+// countSummary renders the item tally shown above the list.
+func (m SelectionModel[T]) countSummary() string {
+	countable := m.opts.CountableItem
+	if countable == nil {
+		countable = func(T) bool { return true }
+	}
+
+	visible := 0
+	for _, listed := range m.list.VisibleItems() {
+		if item, ok := listed.(listItem[T]); ok && countable(item.value) {
+			visible++
+		}
+	}
+
+	total := 0
+	for _, item := range m.items {
+		if countable(item) {
+			total++
+		}
+	}
+
+	name := "items"
+	if visible == 1 {
+		name = "item"
+	}
+	summary := fmt.Sprintf("%d %s", visible, name)
+
+	if hidden := total - visible; hidden > 0 {
+		summary += fmt.Sprintf(" · %d filtered", hidden)
+	}
+	return summary
+}
+
 // startRefresh initiates an async refresh if RefreshItems is configured and not already refreshing
 func (m *SelectionModel[T]) startRefresh() (tea.Model, tea.Cmd) {
 	if m.opts.RefreshItems != nil && !m.refreshing {
@@ -947,6 +987,8 @@ func (m SelectionModel[T]) View() string {
 	} else {
 		footer = helpStyle.Render(strings.Join(actions, " | "))
 	}
+
+	m.list.Title = m.countSummary()
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.list.View(),
