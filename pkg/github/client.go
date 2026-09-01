@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/cli/go-gh/v2"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/diffposition"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/parser"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/diffposition"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/parser"
 )
 
 type Client struct {
@@ -321,7 +321,7 @@ func (c *Client) GetCurrentBranchPR() (int, error) {
 	}
 	c.debugLog("Fork-based PR detection failed: %v", forkErr)
 
-	return 0, fmt.Errorf("no PR found for current branch (use: gh review-conductor list <PR_NUMBER>)")
+	return 0, fmt.Errorf("no PR found for current branch (use: gh review-responder list <PR_NUMBER>)")
 }
 
 // findForkPR searches for a PR opened from a fork by checking which remotes
@@ -903,7 +903,7 @@ func (c *Client) ReplyToReviewComment(prNumber int, commentID int64, body string
 	endpoint := fmt.Sprintf("repos/%s/pulls/%d/comments/%d/replies", repo, prNumber, commentID)
 	c.debugLog("Posting reply to review comment %d on %s PR #%d", commentID, repo, prNumber)
 
-	tmpFile, err := os.CreateTemp("", "gh-review-conductor-comment-*.txt")
+	tmpFile, err := os.CreateTemp("", "gh-review-responder-comment-*.txt")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary file: %w", err)
 	}
@@ -967,7 +967,7 @@ func (c *Client) AddReactionToComment(prNumber int, commentID int64, emoji strin
 	c.debugLog("Adding reaction %s to comment %d on PR %d", emoji, commentID, prNumber)
 
 	// Create JSON payload in a temp file
-	tmpFile, err := os.CreateTemp("", "gh-review-conductor-reaction-*.json")
+	tmpFile, err := os.CreateTemp("", "gh-review-responder-reaction-*.json")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}

@@ -1,6 +1,6 @@
 .PHONY: build install test clean lint fmt help lint test-coverage deps dev release uninstall fumpt
 
-BINARY_NAME=gh-review-conductor
+BINARY_NAME=gh-review-responder
 GO=go
 GOFLAGS=-v
 
@@ -19,7 +19,7 @@ install: build ## Install the extension to gh
 	gh extension install .
 
 uninstall: ## Uninstall the extension from gh
-	gh extension remove review-conductor
+	gh extension remove review-responder
 
 test: ## Run tests with race detection
 	$(GO) test -race -v ./...

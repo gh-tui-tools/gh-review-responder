@@ -8,9 +8,9 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/applier"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ui"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/applier"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ui"
 )
 
 func TestBrowseItemRenderer_IsSkippable(t *testing.T) {

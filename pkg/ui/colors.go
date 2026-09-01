@@ -11,7 +11,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 )

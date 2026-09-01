@@ -1,4 +1,4 @@
-module github.com/gh-tui-tools/gh-review-conductor
+module github.com/gh-tui-tools/gh-review-responder
 
 go 1.24.0
 

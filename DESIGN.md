@@ -1,6 +1,6 @@
-# gh-review-conductor Design Document
+# gh-review-responder Design Document
 
-This document describes the architecture, commands, and features of `gh-review-conductor`, a GitHub CLI extension for managing pull request review comments.
+This document describes the architecture, commands, and features of `gh-review-responder`, a GitHub CLI extension for managing pull request review comments.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This document describes the architecture, commands, and features of `gh-review-c
 
 ## Overview
 
-`gh-review-conductor` helps developers work with GitHub pull request review comments directly from the terminal. It provides:
+`gh-review-responder` helps developers work with GitHub pull request review comments directly from the terminal. It provides:
 
 - **Interactive browsing** of review comments with keyboard navigation
 - **Automatic suggestion application** to local files
@@ -31,7 +31,7 @@ This document describes the architecture, commands, and features of `gh-review-c
 
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
-│                         gh-review-conductor                           │
+│                         gh-review-responder                           │
 ├───────────────────────────────────────────────────────────────────────┤
 │                                                                       │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
@@ -108,7 +108,7 @@ The tool uses both GraphQL and REST APIs:
 
 ```
 ┌───────────────────────┐         ┌─────────────────┐
-│  gh-review-conductor  │         │   GitHub API    │
+│  gh-review-responder  │         │   GitHub API    │
 │                       │         │                 │
 │  ┌───────────┐        │  REST   │  ┌───────────┐  │
 │  │  Client   │────────┼────────▶│  │ /pulls/   │  │
@@ -130,8 +130,8 @@ The default and most feature-rich command. Provides an interactive TUI for brows
 
 **Usage:**
 ```bash
-gh review-conductor browse [PR_NUMBER] [COMMENT_ID]
-gh review-conductor                    # browse is the default command
+gh review-responder browse [PR_NUMBER] [COMMENT_ID]
+gh review-responder                    # browse is the default command
 ```
 
 **Flags:**
@@ -311,13 +311,13 @@ The `a` key launches a coding agent with the review comment context:
 
 ```bash
 # Default: uses 'claude' (Claude Code CLI)
-gh review-conductor browse 123
+gh review-responder browse 123
 
 # Use a different agent
-GH_REVIEW_CONDUCTOR_AGENT=aider gh review-conductor browse 123
+GH_REVIEW_RESPONDER_AGENT=aider gh review-responder browse 123
 
 # Test prompt format
-GH_REVIEW_CONDUCTOR_AGENT=echo gh review-conductor browse 123
+GH_REVIEW_RESPONDER_AGENT=echo gh review-responder browse 123
 ```
 
 **Prompt format:**
@@ -380,7 +380,7 @@ Applies code suggestions from review comments to local files.
 
 **Usage:**
 ```bash
-gh review-conductor apply [PR_NUMBER]
+gh review-responder apply [PR_NUMBER]
 ```
 
 **Flags:**
@@ -456,7 +456,7 @@ Lists review comments in various formats.
 
 **Usage:**
 ```bash
-gh review-conductor list [PR_NUMBER] [THREAD_ID]
+gh review-responder list [PR_NUMBER] [THREAD_ID]
 ```
 
 **Flags:**
@@ -513,7 +513,7 @@ Posts a reply to a review comment thread.
 
 **Usage:**
 ```bash
-gh review-conductor comment COMMENT_ID [PR_NUMBER]
+gh review-responder comment COMMENT_ID [PR_NUMBER]
 ```
 
 **Flags:**
@@ -551,19 +551,19 @@ gh review-conductor comment COMMENT_ID [PR_NUMBER]
 **Examples:**
 ```bash
 # Open editor to compose reply
-gh review-conductor comment 123456789
+gh review-responder comment 123456789
 
 # Inline body
-gh review-conductor comment 123456789 --body "Thanks, fixed!"
+gh review-responder comment 123456789 --body "Thanks, fixed!"
 
 # From file
-gh review-conductor comment 123456789 --body-file response.md
+gh review-responder comment 123456789 --body-file response.md
 
 # From pipe
-echo "LGTM" | gh review-conductor comment 123456789 --stdin
+echo "LGTM" | gh review-responder comment 123456789 --stdin
 
 # Reply and resolve
-gh review-conductor comment 123456789 --body "Done" --resolve
+gh review-responder comment 123456789 --body "Done" --resolve
 ```
 
 ---
@@ -574,8 +574,8 @@ Resolves or unresolves review comment threads.
 
 **Usage:**
 ```bash
-gh review-conductor resolve [COMMENT_ID]
-gh review-conductor resolve [PR_NUMBER] [COMMENT_ID]
+gh review-responder resolve [COMMENT_ID]
+gh review-responder resolve [PR_NUMBER] [COMMENT_ID]
 ```
 
 **Flags:**
@@ -608,19 +608,19 @@ gh review-conductor resolve [PR_NUMBER] [COMMENT_ID]
 **Examples:**
 ```bash
 # Resolve single comment
-gh review-conductor resolve 123456789
+gh review-responder resolve 123456789
 
 # Unresolve
-gh review-conductor resolve 123456789 --unresolve
+gh review-responder resolve 123456789 --unresolve
 
 # Resolve with comment
-gh review-conductor resolve 123456789 --comment "Fixed in abc123"
+gh review-responder resolve 123456789 --comment "Fixed in abc123"
 
 # Resolve with comment from file
-gh review-conductor resolve 123456789 --comment @response.md
+gh review-responder resolve 123456789 --comment @response.md
 
 # Resolve all unresolved comments
-gh review-conductor resolve --all
+gh review-responder resolve --all
 ```
 
 ---
@@ -851,7 +851,8 @@ func SetUIDebug(enabled bool) {
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `EDITOR` | Editor for composing replies | `vim` |
-| `GH_REVIEW_CONDUCTOR_AGENT` | Coding agent command | `claude` |
+| `GH_REVIEW_RESPONDER_AGENT` | Coding agent command | `claude` |
+| `GH_REVIEW_CONDUCTOR_AGENT` | Coding agent command, honored after `GH_REVIEW_RESPONDER_AGENT` for setups predating the rename | `claude` |
 | `GEMINI_API_KEY` | Gemini AI API key | - |
 | `OPENAI_API_KEY` | OpenAI API key | - |
 | `ANTHROPIC_API_KEY` | Claude API key | - |
@@ -865,17 +866,17 @@ func SetUIDebug(enabled bool) {
 
 When suggestion application fails, diagnostic files are written to `/tmp/`:
 
-- `gh-review-conductor-mismatch-*.diff` - Expected vs actual content
-- `gh-review-conductor-patch-*.patch` - Failed patch with error details
-- `gh-review-conductor-ai-patch-*.patch` - Failed AI-generated patch
+- `gh-review-responder-mismatch-*.diff` - Expected vs actual content
+- `gh-review-responder-patch-*.patch` - Failed patch with error details
+- `gh-review-responder-ai-patch-*.patch` - Failed AI-generated patch
 
 ### Debug Mode
 
 All commands support `--debug` for detailed output:
 
 ```bash
-gh review-conductor browse 123 --debug
-gh review-conductor apply 123 --debug
+gh review-responder browse 123 --debug
+gh review-responder apply 123 --debug
 ```
 
 This logs:
