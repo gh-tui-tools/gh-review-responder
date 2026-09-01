@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
 )
 
 func TestFindReplacementTargetByLineRange(t *testing.T) {

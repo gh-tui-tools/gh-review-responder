@@ -629,7 +629,7 @@ func (m *SelectionModel[T]) startEditorForAction(item T, action int) tea.Cmd {
 	}
 
 	// Create temp file
-	tmpFile, err := os.CreateTemp("", "gh-review-conductor-*.md")
+	tmpFile, err := os.CreateTemp("", "gh-review-responder-*.md")
 	if err != nil {
 		return m.list.NewStatusMessage(Colorize(ColorRed, fmt.Sprintf("Failed to create temp file: %v", err)))
 	}
@@ -712,13 +712,21 @@ func (m SelectionModel[T]) handleEditorFinished(msg editorFinishedMsg) (tea.Mode
 	return m, nil
 }
 
+// agentCommand returns the coding agent to launch. GH_REVIEW_CONDUCTOR_AGENT
+// is honored after the current name so that setups predating the rename keep
+// working.
+func agentCommand() string {
+	for _, name := range []string{"GH_REVIEW_RESPONDER_AGENT", "GH_REVIEW_CONDUCTOR_AGENT"} {
+		if agent := os.Getenv(name); agent != "" {
+			return agent
+		}
+	}
+	return "claude"
+}
+
 // launchAgent starts the configured coding agent with the given prompt
 func (m *SelectionModel[T]) launchAgent(prompt string) tea.Cmd {
-	agent := os.Getenv("GH_REVIEW_CONDUCTOR_AGENT")
-	if agent == "" {
-		agent = "claude"
-	}
-	parts := strings.Fields(agent)
+	parts := strings.Fields(agentCommand())
 	args := append(parts[1:], prompt)
 	c := exec.Command(parts[0], args...)
 	return tea.ExecProcess(c, func(err error) tea.Msg {

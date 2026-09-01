@@ -1082,17 +1082,20 @@ type mockRenderer struct {
 	previewContent string
 }
 
-func (r mockRenderer) Title(item string) string                           { return item }
-func (r mockRenderer) Description(item string) string                     { return "desc" }
-func (r mockRenderer) Preview(item string) string                         { return r.previewContent }
-func (r mockRenderer) PreviewWithHighlight(item string, idx int) string   { return r.previewContent + "-" + item }
-func (r mockRenderer) EditPath(item string) string                        { return "" }
-func (r mockRenderer) EditLine(item string) int                           { return 0 }
-func (r mockRenderer) FilterValue(item string) string                     { return item }
-func (r mockRenderer) IsSkippable(item string) bool                       { return false }
-func (r mockRenderer) ThreadCommentCount(item string) int                 { return 1 }
-func (r mockRenderer) ThreadCommentPreview(item string, idx int) string   { return item }
-func (r mockRenderer) WithSelectedComment(item string, idx int) string    { return item }
+func (r mockRenderer) Title(item string) string       { return item }
+func (r mockRenderer) Description(item string) string { return "desc" }
+func (r mockRenderer) Preview(item string) string { return r.previewContent }
+
+func (r mockRenderer) PreviewWithHighlight(item string, idx int) string {
+	return r.previewContent + "-" + item
+}
+func (r mockRenderer) EditPath(item string) string                      { return "" }
+func (r mockRenderer) EditLine(item string) int                         { return 0 }
+func (r mockRenderer) FilterValue(item string) string                   { return item }
+func (r mockRenderer) IsSkippable(item string) bool                     { return false }
+func (r mockRenderer) ThreadCommentCount(item string) int               { return 1 }
+func (r mockRenderer) ThreadCommentPreview(item string, idx int) string { return item }
+func (r mockRenderer) WithSelectedComment(item string, idx int) string  { return item }
 
 // newTestModel creates a SelectionModel suitable for testing
 func newTestModel(items []string, opts SelectorOptions[string]) SelectionModel[string] {
@@ -1563,7 +1566,6 @@ func TestRefreshKeepsHideResolvedFilterApplied(t *testing.T) {
 	}
 }
 
-
 func TestRefreshStatusReportsCountableTally(t *testing.T) {
 	hideResolved := func(item string, active bool) bool {
 		if !active {
@@ -1594,5 +1596,30 @@ func TestRefreshStatusReportsCountableTally(t *testing.T) {
 	}
 	if strings.Contains(view, "Refreshed: 5 items") {
 		t.Errorf("status still reports the raw row count\n%s", view)
+	}
+}
+
+func TestAgentCommandPrefersNewEnvVarWithLegacyFallback(t *testing.T) {
+	tests := []struct {
+		name    string
+		current string
+		legacy  string
+		want    string
+	}{
+		{name: "neither set falls back to the default", want: "claude"},
+		{name: "current name wins", current: "aider", want: "aider"},
+		{name: "legacy name still honored", legacy: "aider", want: "aider"},
+		{name: "current name takes precedence", current: "aider", legacy: "echo", want: "aider"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("GH_REVIEW_RESPONDER_AGENT", tt.current)
+			t.Setenv("GH_REVIEW_CONDUCTOR_AGENT", tt.legacy)
+
+			if got := agentCommand(); got != tt.want {
+				t.Errorf("agentCommand() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

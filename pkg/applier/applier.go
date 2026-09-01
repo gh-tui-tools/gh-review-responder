@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ai"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/diffhunk"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ui"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ai"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/diffhunk"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ui"
 )
 
 // errEditApplied is a sentinel error indicating that a patch was successfully applied via the edit flow
@@ -628,7 +628,7 @@ func (a *Applier) saveMismatchDiff(comment *github.ReviewComment, fileLines []st
 		fmt.Fprintf(&diff, "# > %s\n", line)
 	}
 
-	f, err := os.CreateTemp("", "gh-review-conductor-mismatch-*.diff")
+	f, err := os.CreateTemp("", "gh-review-responder-mismatch-*.diff")
 	if err != nil {
 		a.debugLog("Failed to create mismatch diff temp file: %v", err)
 		return ""
@@ -800,7 +800,7 @@ func (a *Applier) applyWithAI(comment *github.ReviewComment, autoApply bool) err
 		fmt.Fprintf(&patchContent, "#\n# Generated patch:\n#\n")
 		patchContent.WriteString(resp.Patch)
 
-		patchFile, tmpErr := os.CreateTemp("", "gh-review-conductor-ai-patch-*.patch")
+		patchFile, tmpErr := os.CreateTemp("", "gh-review-responder-ai-patch-*.patch")
 		if tmpErr != nil {
 			a.debugLog("Failed to create AI patch temp file: %v", tmpErr)
 			return fmt.Errorf("failed to apply AI-generated patch: %w\nOutput: %s", err, string(output))

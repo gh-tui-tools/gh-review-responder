@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ai"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/applier"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ai"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/applier"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
 	"github.com/spf13/cobra"
 )
 

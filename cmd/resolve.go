@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/github"
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ui"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/github"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ui"
 	"github.com/spf13/cobra"
 )
 

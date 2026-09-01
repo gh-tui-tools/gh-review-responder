@@ -57,8 +57,8 @@ func BuildPrompt(req *SuggestionRequest, config *TemplateConfig) (string, error)
 // loadTemplate loads a template from the filesystem or embedded resources
 // Priority order:
 // 1. CustomTemplatePath (if specified in config)
-// 2. .github/gh-review-conductor/prompts/<name>
-// 3. ~/.config/gh-review-conductor/prompts/<name>
+// 2. .github/gh-review-responder/prompts/<name>
+// 3. ~/.config/gh-review-responder/prompts/<name>
 // 4. Embedded default template
 func loadTemplate(name string, config *TemplateConfig) (string, error) {
 	// 1. Check custom template path from config
@@ -72,7 +72,7 @@ func loadTemplate(name string, config *TemplateConfig) (string, error) {
 	}
 
 	// 2. Check repo-specific template
-	repoPath := filepath.Join(".github", "gh-review-conductor", "prompts", name)
+	repoPath := filepath.Join(".github", "gh-review-responder", "prompts", name)
 	if content, err := os.ReadFile(repoPath); err == nil {
 		return string(content), nil
 	}
@@ -80,7 +80,7 @@ func loadTemplate(name string, config *TemplateConfig) (string, error) {
 	// 3. Check user-level template
 	homeDir, err := os.UserHomeDir()
 	if err == nil {
-		userPath := filepath.Join(homeDir, ".config", "gh-review-conductor", "prompts", name)
+		userPath := filepath.Join(homeDir, ".config", "gh-review-responder", "prompts", name)
 		if content, err := os.ReadFile(userPath); err == nil {
 			return string(content), nil
 		}

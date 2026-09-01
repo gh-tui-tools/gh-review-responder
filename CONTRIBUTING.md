@@ -1,6 +1,6 @@
-# Contributing to gh-review-conductor
+# Contributing to gh-review-responder
 
-Thank you for your interest in contributing to gh-review-conductor! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to gh-review-responder! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
@@ -15,8 +15,8 @@ Thank you for your interest in contributing to gh-review-conductor! This documen
 1. Fork and clone the repository:
 
 ```bash
-git clone https://github.com/gh-tui-tools/gh-review-conductor.git
-cd gh-review-conductor
+git clone https://github.com/gh-tui-tools/gh-review-responder.git
+cd gh-review-responder
 ```
 2. Install commit hooks:
 
@@ -52,22 +52,22 @@ make test
 make build
 ```
 
-This will create the `gh-review-conductor` binary in the project root.
+This will create the `gh-review-responder` binary in the project root.
 
 ### Testing Locally
 
 To test the plugin locally without installing it:
 
 ```bash
-./gh-review-conductor list
-./gh-review-conductor apply
+./gh-review-responder list
+./gh-review-responder apply
 ```
 
 Or install it as a local extension:
 
 ```bash
 make install
-gh review-conductor list
+gh review-responder list
 ```
 
 ### Running Tests

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`gh-review-conductor` is a GitHub CLI extension written in Go that applies GitHub pull request review comments and suggestions directly to local files. It fetches review comments, parses suggestion blocks, and applies them interactively.
+`gh-review-responder` is a GitHub CLI extension written in Go that applies GitHub pull request review comments and suggestions directly to local files. It fetches review comments, parses suggestion blocks, and applies them interactively.
 
 ## Build and Test Commands
 
@@ -28,7 +28,7 @@ make lint
 gh extension install .
 
 # Uninstall extension
-gh extension remove review-conductor
+gh extension remove review-responder
 ```
 
 ## Architecture
@@ -61,8 +61,8 @@ gh extension remove review-conductor
   2. **Content matching** (fallback): Searches for exact content match in current file
 - Creates unified diff patches and applies via `git apply --unidiff-zero`
 - Debug mode: Set with `SetDebug(true)`, logs to stderr
-- On content mismatch: Generates diagnostic diff file to `/tmp/gh-review-conductor-mismatch-<ID>.diff`
-- On `git apply` failure: Saves patch to `/tmp/gh-review-conductor-patch-<ID>.patch`
+- On content mismatch: Generates diagnostic diff file to `/tmp/gh-review-responder-mismatch-<ID>.diff`
+- On `git apply` failure: Saves patch to `/tmp/gh-review-responder-patch-<ID>.patch`
 
 **Suggestion Parser** (`pkg/parser/suggestion.go`)
 - Extracts code from GitHub suggestion blocks (` ```suggestion ... ``` `)
@@ -80,9 +80,9 @@ gh extension remove review-conductor
 
 ### CLI Commands
 
-- `gh review-conductor list [PR_NUMBER] [THREAD_ID]` - List unresolved review comments (use `--all` for resolved too)
+- `gh review-responder list [PR_NUMBER] [THREAD_ID]` - List unresolved review comments (use `--all` for resolved too)
   - Flags: `-R/--repo <owner/repo>` (specify different repo), `--json` (raw review comment JSON for optional thread), `--code-context` (show diff hunk in output)
-- `gh review-conductor apply [PR_NUMBER]` - Interactive mode to apply suggestions
+- `gh review-responder apply [PR_NUMBER]` - Interactive mode to apply suggestions
   - Flags: `--all` (auto-apply all), `--file <path>`, `--include-resolved`, `--debug`
   - AI Flags: `--ai-auto` (apply all with AI), `--ai-provider <gemini>`, `--ai-model <model>`, `--ai-template <path>`, `--ai-token <key>`
   - Interactive: Select 'a' option to use AI for individual suggestions
@@ -93,10 +93,10 @@ When issues occur applying suggestions:
 
 1. Enable debug mode with `--debug` flag for detailed output
 2. Check diagnostic files in `/tmp/`:
-   - `gh-review-conductor-mismatch-*.diff` - Shows expected vs actual content with proper unified diff format
-   - `gh-review-conductor-patch-*.patch` - Contains failed patch with error details
-   - `gh-review-conductor-ai-patch-*.patch` - Contains failed AI-generated patch with metadata
-3. Use `gh review-conductor list <PR> [THREAD_ID] --json` to see raw GitHub API response (include `THREAD_ID` to limit to a thread)
+   - `gh-review-responder-mismatch-*.diff` - Shows expected vs actual content with proper unified diff format
+   - `gh-review-responder-patch-*.patch` - Contains failed patch with error details
+   - `gh-review-responder-ai-patch-*.patch` - Contains failed AI-generated patch with metadata
+3. Use `gh review-responder list <PR> [THREAD_ID] --json` to see raw GitHub API response (include `THREAD_ID` to limit to a thread)
 
 See [DEBUGGING.md](DEBUGGING.md) for detailed troubleshooting guide.
 See [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md) for AI feature documentation.

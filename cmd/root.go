@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/gh-tui-tools/gh-review-conductor/pkg/ui"
+	"github.com/gh-tui-tools/gh-review-responder/pkg/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +13,9 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "gh-review-conductor",
+	Use:   "gh-review-responder",
 	Short: "Apply GitHub review comments directly to your code",
-	Long: `gh-review-conductor is a GitHub CLI extension that allows you to fetch and apply
+	Long: `gh-review-responder is a GitHub CLI extension that allows you to fetch and apply
 review comments and suggestions from pull requests directly to your local code.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		ui.SetColorEnabled(!noColor)
