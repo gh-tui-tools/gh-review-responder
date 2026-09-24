@@ -1,0 +1,162 @@
+[
+  {
+    "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/1001",
+    "pull_request_review_id": 501,
+    "id": 1001,
+    "node_id": "PRRC_1001",
+    "diff_hunk": "@@ -0,0 +1,4 @@\n+package counter\n+\n+// total counts the calls to Add.\n+var total int",
+    "path": "counter.go",
+    "commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "original_commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "user": {
+      "login": "monalisa",
+      "id": 2,
+      "type": "User"
+    },
+    "body": "Nit: Should this be exported?",
+    "created_at": "2026-09-24T11:07:09Z",
+    "updated_at": "2026-09-24T11:07:09Z",
+    "html_url": "https://github.com/octo-org/octo-repo/pull/1#discussion_r1001",
+    "pull_request_url": "https://api.github.com/repos/octo-org/octo-repo/pulls/1",
+    "author_association": "MEMBER",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/1001"
+      },
+      "html": {
+        "href": "https://github.com/octo-org/octo-repo/pull/1#discussion_r1001"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/1"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/1001/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": null,
+    "original_start_line": null,
+    "start_side": null,
+    "line": 4,
+    "original_line": 4,
+    "side": "RIGHT",
+    "original_position": 4,
+    "position": 4,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2001",
+    "pull_request_review_id": 501,
+    "id": 2001,
+    "node_id": "PRRC_2001",
+    "diff_hunk": "@@ -0,0 +1,7 @@\n+package counter\n+\n+// total counts the calls to Add.\n+var total int\n+\n+func Add() {\n+\ttotal += 1",
+    "path": "counter.go",
+    "commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "original_commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "user": {
+      "login": "monalisa",
+      "id": 2,
+      "type": "User"
+    },
+    "body": "Use total++ here.",
+    "created_at": "2026-09-24T11:08:10Z",
+    "updated_at": "2026-09-24T11:08:10Z",
+    "html_url": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2001",
+    "pull_request_url": "https://api.github.com/repos/octo-org/octo-repo/pulls/1",
+    "author_association": "MEMBER",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2001"
+      },
+      "html": {
+        "href": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2001"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/1"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2001/reactions",
+      "total_count": 0,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 0,
+      "eyes": 0
+    },
+    "start_line": null,
+    "original_start_line": null,
+    "start_side": null,
+    "line": 7,
+    "original_line": 7,
+    "side": "RIGHT",
+    "original_position": 7,
+    "position": 7,
+    "subject_type": "line"
+  },
+  {
+    "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2002",
+    "pull_request_review_id": 502,
+    "id": 2002,
+    "node_id": "PRRC_2002",
+    "diff_hunk": "@@ -0,0 +1,7 @@\n+package counter\n+\n+// total counts the calls to Add.\n+var total int\n+\n+func Add() {\n+\ttotal += 1",
+    "path": "counter.go",
+    "commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "original_commit_id": "5c2d9f0e8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+    "user": {
+      "login": "octocat",
+      "id": 583231,
+      "type": "User"
+    },
+    "body": "Fixed.",
+    "created_at": "2026-09-24T14:46:41Z",
+    "updated_at": "2026-09-24T14:46:41Z",
+    "html_url": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2002",
+    "pull_request_url": "https://api.github.com/repos/octo-org/octo-repo/pulls/1",
+    "author_association": "OWNER",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2002"
+      },
+      "html": {
+        "href": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2002"
+      },
+      "pull_request": {
+        "href": "https://api.github.com/repos/octo-org/octo-repo/pulls/1"
+      }
+    },
+    "reactions": {
+      "url": "https://api.github.com/repos/octo-org/octo-repo/pulls/comments/2002/reactions",
+      "total_count": 1,
+      "+1": 0,
+      "-1": 0,
+      "laugh": 0,
+      "hooray": 0,
+      "confused": 0,
+      "heart": 0,
+      "rocket": 1,
+      "eyes": 0
+    },
+    "start_line": null,
+    "original_start_line": null,
+    "start_side": null,
+    "line": 7,
+    "original_line": 7,
+    "side": "RIGHT",
+    "original_position": 7,
+    "position": 7,
+    "subject_type": "line",
+    "in_reply_to_id": 2001
+  }
+]
