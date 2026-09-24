@@ -1,0 +1,142 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "Y3Vyc29yOnYyOpK0MjAyNi0wOS0yNFQxMTowODoxMFrOAAAH0Q=="
+          },
+          "nodes": [
+            {
+              "id": "PRRT_second_page",
+              "isResolved": true,
+              "comments": {
+                "nodes": [
+                  {
+                    "databaseId": 2001,
+                    "body": "Use total++ here.",
+                    "url": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2001",
+                    "createdAt": "2026-09-24T11:08:10Z",
+                    "author": {
+                      "login": "monalisa"
+                    },
+                    "reactionGroups": [
+                      {
+                        "content": "THUMBS_UP",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "THUMBS_DOWN",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "LAUGH",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "HOORAY",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "CONFUSED",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "HEART",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "ROCKET",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "EYES",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "databaseId": 2002,
+                    "body": "Fixed.",
+                    "url": "https://github.com/octo-org/octo-repo/pull/1#discussion_r2002",
+                    "createdAt": "2026-09-24T14:46:41Z",
+                    "author": {
+                      "login": "octocat"
+                    },
+                    "reactionGroups": [
+                      {
+                        "content": "THUMBS_UP",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "THUMBS_DOWN",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "LAUGH",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "HOORAY",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "CONFUSED",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "HEART",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      },
+                      {
+                        "content": "ROCKET",
+                        "reactors": {
+                          "totalCount": 1
+                        }
+                      },
+                      {
+                        "content": "EYES",
+                        "reactors": {
+                          "totalCount": 0
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

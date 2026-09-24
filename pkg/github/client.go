@@ -3,7 +3,9 @@ package github
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -127,10 +129,14 @@ func (c *Client) getReviewThreads(repo string, prNumber int) (map[int64]*ThreadI
 	c.debugLog("Fetching review threads for %s PR #%d", repo, prNumber)
 
 	query := fmt.Sprintf(`
-		query {
+		query($endCursor: String) {
 			repository(owner: "%s", name: "%s") {
 				pullRequest(number: %d) {
-					reviewThreads(first: 100) {
+					reviewThreads(first: 100, after: $endCursor) {
+						pageInfo {
+							hasNextPage
+							endCursor
+						}
 						nodes {
 							id
 							isResolved
@@ -160,7 +166,10 @@ func (c *Client) getReviewThreads(repo string, prNumber int) (map[int64]*ThreadI
 
 	c.debugLog("GraphQL query: %s", query)
 
-	stdOut, _, err := gh.Exec("api", "graphql", "-f", fmt.Sprintf("query=%s", query))
+	// A page holds at most 100 threads. So with --paginate, gh passes each page's endCursor
+	// back in as $endCursor until hasNextPage is false. Any thread left out of the map would
+	// have its comment listed as unresolved, and its replies as review comments of their own.
+	stdOut, _, err := gh.Exec("api", "graphql", "--paginate", "-f", fmt.Sprintf("query=%s", query))
 	if err != nil {
 		c.debugLog("GraphQL query failed: %v", err)
 		return nil, err
@@ -168,50 +177,59 @@ func (c *Client) getReviewThreads(repo string, prNumber int) (map[int64]*ThreadI
 
 	c.debugLog("GraphQL response length: %d bytes", len(stdOut.Bytes()))
 
-	var result struct {
-		Data struct {
-			Repository struct {
-				PullRequest struct {
-					ReviewThreads struct {
-						Nodes []struct {
-							ID         string `json:"id"`
-							IsResolved bool   `json:"isResolved"`
-							Comments   struct {
-								Nodes []struct {
-									DatabaseID int64     `json:"databaseId"`
-									Body       string    `json:"body"`
-									URL        string    `json:"url"`
-									CreatedAt  time.Time `json:"createdAt"`
-									Author     struct {
-										Login string `json:"login"`
-									} `json:"author"`
-									ReactionGroups []struct {
-										Content  string `json:"content"`
-										Reactors struct {
-											TotalCount int `json:"totalCount"`
-										} `json:"reactors"`
-									} `json:"reactionGroups"`
-								} `json:"nodes"`
-							} `json:"comments"`
-						} `json:"nodes"`
-					} `json:"reviewThreads"`
-				} `json:"pullRequest"`
-			} `json:"repository"`
-		} `json:"data"`
+	type reviewThread struct {
+		ID         string `json:"id"`
+		IsResolved bool   `json:"isResolved"`
+		Comments   struct {
+			Nodes []struct {
+				DatabaseID int64     `json:"databaseId"`
+				Body       string    `json:"body"`
+				URL        string    `json:"url"`
+				CreatedAt  time.Time `json:"createdAt"`
+				Author     struct {
+					Login string `json:"login"`
+				} `json:"author"`
+				ReactionGroups []struct {
+					Content  string `json:"content"`
+					Reactors struct {
+						TotalCount int `json:"totalCount"`
+					} `json:"reactors"`
+				} `json:"reactionGroups"`
+			} `json:"nodes"`
+		} `json:"comments"`
 	}
 
-	if err := json.Unmarshal(stdOut.Bytes(), &result); err != nil {
-		c.debugLog("Failed to parse GraphQL response: %v", err)
-		if c.debug {
-			fmt.Fprintf(os.Stderr, "[DEBUG] Raw response: %s\n", stdOut.String())
+	// gh prints each page as a JSON document of its own, one right after the other.
+	var reviewThreads []reviewThread
+	decoder := json.NewDecoder(bytes.NewReader(stdOut.Bytes()))
+	for {
+		var page struct {
+			Data struct {
+				Repository struct {
+					PullRequest struct {
+						ReviewThreads struct {
+							Nodes []reviewThread `json:"nodes"`
+						} `json:"reviewThreads"`
+					} `json:"pullRequest"`
+				} `json:"repository"`
+			} `json:"data"`
 		}
-		return nil, fmt.Errorf("failed to parse GraphQL response: %w", err)
+		if err := decoder.Decode(&page); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			c.debugLog("Failed to parse GraphQL response: %v", err)
+			if c.debug {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Raw response: %s\n", stdOut.String())
+			}
+			return nil, fmt.Errorf("failed to parse GraphQL response: %w", err)
+		}
+		reviewThreads = append(reviewThreads, page.Data.Repository.PullRequest.ReviewThreads.Nodes...)
 	}
 
-	c.debugLog("Found %d review threads", len(result.Data.Repository.PullRequest.ReviewThreads.Nodes))
+	c.debugLog("Found %d review threads", len(reviewThreads))
 
 	threads := make(map[int64]*ThreadInfo)
-	for i, thread := range result.Data.Repository.PullRequest.ReviewThreads.Nodes {
+	for i, thread := range reviewThreads {
 		if len(thread.Comments.Nodes) == 0 {
 			c.debugLog("Thread %d: no comments, skipping", i)
 			continue
